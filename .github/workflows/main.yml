@@ -40,4 +40,3 @@ Plugin [id: 'org.gradle.toolchains.foojay-resolver-convention', version: '1.0.0'
 
 BUILD FAILED in 25s
 Error: Process completed with exit code 1.
-
