@@ -1,65 +1,43 @@
-name: Build APK RTerp
+26s
+Run # Encontra onde está o settings.gradle.kts ou settings.gradle
 
-on:
-  push:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+Welcome to Gradle 9.9.1!
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+Here are the highlights of this release:
+ - Performance improvements for Kotlin DSL compilation
+ - Test filtering for non-method JUnit Platform tests
+ - Wrapper settings preserved on upgrade
+ - Predefined groups in the Problems API
 
-    steps:
-      - name: 1. Baixar código do repositório
-        uses: actions/checkout@v4
+For more details see https://docs.gradle.org/9.9.1/release-notes.html
 
-      - name: 2. Configurar Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.9.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: assembleDebug
 
-      - name: 3. Aceitar licenças do Android SDK pré-instalado
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+Configuration cache entry stored.
+FAILURE: Build failed with an exception.
 
-      - name: 4. Organizar estrutura, injetar chaves e compilar APK
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          # Encontra onde está o settings.gradle.kts ou settings.gradle
-          PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle*" -printf "%h\n" | head -n 1)
-          if [ -z "$PROJECT_DIR" ]; then
-            echo "Erro: settings.gradle não encontrado!"
-            ls -la
-            exit 1
-          fi
+* Where:
+Settings file '/home/runner/work/Aplicativo-Realtech/Aplicativo-Realtech/settings.gradle.kts' line: 15
 
-          cd "$PROJECT_DIR"
+* What went wrong:
+Plugin [id: 'org.gradle.toolchains.foojay-resolver-convention', version: '1.0.0'] was not found in any of the following sources:
 
-          # Se a pasta 'app' não existir, mas a pasta 'src' estiver solta na raiz, organiza automaticamente
-          if [ ! -d "app" ] && [ -d "src" ]; then
-            echo "Organizando pasta src para dentro de app/..."
-            mkdir -p app
-            mv src app/
-          fi
+- Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
+- Included Builds (No included builds contain this plugin)
+- Plugin Repositories (could not resolve plugin artifact 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:1.0.0')
+  Searched in the following repositories:
+    Google
+    MavenRepo
+    Gradle Central Plugin Repository
 
-          # Injeta as chaves do Supabase
-          echo "SUPABASE_URL=$SUPABASE_URL" > local.properties
-          echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> local.properties
-          echo "SUPABASE_URL=$SUPABASE_URL" > .env
-          echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> .env
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
 
-          # Compila o APK de Debug
-          if [ -f "./gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug --no-daemon
-          else
-            gradle assembleDebug --no-daemon
-          fi
+BUILD FAILED in 25s
+Error: Process completed with exit code 1.
 
-      - name: 5. Disponibilizar APK para download
-        uses: actions/upload-artifact@v4
-        with:
-          name: RTerp-APK
-          path: "**/app/build/outputs/apk/debug/*.apk"
