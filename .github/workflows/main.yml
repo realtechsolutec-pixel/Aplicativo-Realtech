@@ -22,29 +22,35 @@ jobs:
       - name: 3. Aceitar licenças do Android SDK pré-instalado
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: 4. Localizar projeto, injetar chaves e compilar APK
+      - name: 4. Organizar estrutura, injetar chaves e compilar APK
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # Encontra a pasta onde está o settings.gradle.kts ou settings.gradle
+          # Encontra onde está o settings.gradle.kts ou settings.gradle
           PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle*" -printf "%h\n" | head -n 1)
           if [ -z "$PROJECT_DIR" ]; then
-            echo "Erro: Projeto Android não encontrado no repositório!"
+            echo "Erro: settings.gradle não encontrado!"
             ls -la
             exit 1
           fi
 
-          echo "Projeto encontrado em: $PROJECT_DIR"
           cd "$PROJECT_DIR"
 
-          # Injeta as chaves do Supabase na pasta raiz do projeto Android
+          # Se a pasta 'app' não existir, mas a pasta 'src' estiver solta na raiz, organiza automaticamente
+          if [ ! -d "app" ] && [ -d "src" ]; then
+            echo "Organizando pasta src para dentro de app/..."
+            mkdir -p app
+            mv src app/
+          fi
+
+          # Injeta as chaves do Supabase
           echo "SUPABASE_URL=$SUPABASE_URL" > local.properties
           echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> local.properties
           echo "SUPABASE_URL=$SUPABASE_URL" > .env
           echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> .env
 
-          # Compila usando ./gradlew (se existir) ou o gradle pré-instalado
+          # Compila o APK de Debug
           if [ -f "./gradlew" ]; then
             chmod +x gradlew
             ./gradlew assembleDebug --no-daemon
